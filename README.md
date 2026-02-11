@@ -1,149 +1,99 @@
-# Pipex
+# pipex
 
-A 42 school project that recreates the behavior of shell pipes in C. This program handles the redirection of input/output between commands, mimicking the shell's pipe `|` operator.
+A 42 school project that recreates the behavior of shell pipes in C, handling command execution and I/O redirection.
 
-## 📋 Description
+## Description
 
-Pipex replicates the functionality of the shell command:
+**pipex** replicates the functionality of the shell pipe operator `|`, allowing you to chain commands together with input and output file redirection. The program mimics the shell command:
+
 ```bash
 < infile cmd1 | cmd2 > outfile
 ```
 
 The program takes an input file, executes the first command on its content, pipes the output to the second command, and writes the final result to an output file.
 
-## 🚀 Features
+### Key Features
 
-### Mandatory Part
-- Handles two commands with input and output file redirection
-- Proper error handling for file operations and command execution
-- Memory management with no leaks
+- **Input validation** — handles file permissions, command not found, and edge cases.
+- **Multiple pipes (bonus)** — supports chaining any number of commands together.
+- **Here_doc support (bonus)** — read input from stdin until a delimiter is reached.
+- **Proper memory management** — no leaks, all file descriptors properly closed.
 
-### Bonus Part
-- **Multiple pipes**: Handle any number of commands
-  ```bash
-  ./pipex_bonus infile cmd1 cmd2 cmd3 ... cmdn outfile
-  ```
-- **Here_doc support**: Read input from standard input until a delimiter is reached
-  ```bash
-  ./pipex_bonus here_doc LIMITER cmd1 cmd2 outfile
-  ```
+## Shell Equivalents
 
-## 🛠️ Installation
+| Pipex Command | Shell Equivalent |
+|---------------|------------------|
+| `./pipex infile "cmd1" "cmd2" outfile` | `< infile cmd1 \| cmd2 > outfile` |
+| `./pipex_bonus infile "cmd1" "cmd2" "cmd3" outfile` | `< infile cmd1 \| cmd2 \| cmd3 > outfile` |
+| `./pipex_bonus here_doc LIM "cmd1" "cmd2" outfile` | `cmd1 << LIM \| cmd2 >> outfile` |
 
-1. Clone the repository:
-   ```bash
-   git clone git@github.com:forzen03/pipex.git
-   cd pipex
-   ```
+## Build
 
-2. Compile the project:
-   ```bash
-   # For mandatory part
-   make
-
-   # For bonus part
-   make bonus
-   ```
-
-## 📖 Usage
-
-### Mandatory Version
 ```bash
+# Compile pipex
+make
+
+# Compile the bonus version
+make bonus
+
+# Clean object files
+make clean
+
+# Full clean (objects + executables)
+make fclean
+
+# Rebuild
+make re
+```
+
+## Usage
+
+```bash
+# Basic usage with two commands
 ./pipex infile "cmd1" "cmd2" outfile
-```
 
-**Example:**
-```bash
+# Example: grep and count lines
 ./pipex input.txt "grep hello" "wc -l" output.txt
-```
-This is equivalent to:
-```bash
-< input.txt grep hello | wc -l > output.txt
-```
 
-### Bonus Version
+# Bonus: multiple commands
+./pipex_bonus infile "cat" "grep error" "wc -l" outfile
 
-**Multiple commands:**
-```bash
-./pipex_bonus infile "cmd1" "cmd2" "cmd3" ... "cmdn" outfile
-```
-
-**Example:**
-```bash
-./pipex_bonus input.txt "cat" "grep error" "wc -l" output.txt
-```
-
-**Here_doc mode:**
-```bash
-./pipex_bonus here_doc LIMITER "cmd1" "cmd2" outfile
-```
-
-**Example:**
-```bash
+# Bonus: here_doc mode
 ./pipex_bonus here_doc EOF "cat" "wc -l" output.txt
 ```
-This is equivalent to:
-```bash
-cat << EOF | wc -l >> output.txt
-```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 pipex/
-├── pipex.c              # Main mandatory implementation
-├── pipex.h              # Header file for mandatory part
-├── pipex_utils.c        # Utility functions
-├── pipex_utils2.c       # Additional utility functions
-├── pipex_bonus.c        # Main bonus implementation
-├── pipex_bonus.h        # Header file for bonus part
-├── pipex_utils_bonus.c  # Bonus utility functions
-├── pipex_utils2_bonus.c # Additional bonus utilities
-├── first_process_bonus.c# First child process handler
-├── mid_process_bonus.c  # Middle processes handler
-├── last_process_bonus.c # Last child process handler
-├── here_doc_bonus.c     # Here_doc implementation
-├── Makefile             # Build configuration
-└── libft/               # Custom C library
+├── pipex.c               # Entry point, main process handling
+├── pipex.h               # Main header file
+├── pipex_utils.c         # Utility functions (path parsing, etc.)
+├── pipex_utils2.c        # Additional utility functions
+├── pipex_bonus.c         # Bonus entry point with multiple pipe support
+├── pipex_bonus.h         # Bonus header file
+├── pipex_utils_bonus.c   # Bonus utility functions
+├── pipex_utils2_bonus.c  # Additional bonus utilities
+├── first_process_bonus.c # First child process handler
+├── mid_process_bonus.c   # Middle processes handler
+├── last_process_bonus.c  # Last child process handler
+├── here_doc_bonus.c      # Here_doc implementation
+├── Makefile              # Build system
+└── libft/                # Custom C library (libft)
+    ├── libft.h
+    ├── ft_*.c
+    └── Makefile
 ```
 
-## 🔧 Makefile Commands
+## How It Works
 
-| Command | Description |
-|---------|-------------|
-| `make` | Compile mandatory part |
-| `make bonus` | Compile bonus part |
-| `make clean` | Remove object files |
-| `make fclean` | Remove object files and executables |
-| `make re` | Recompile the project |
+1. **Parse arguments** — extract input file, commands, and output file from command line.
+2. **Create pipes** — set up inter-process communication channels using `pipe()`.
+3. **Fork processes** — create child processes for each command using `fork()`.
+4. **Redirect I/O** — use `dup2()` to redirect stdin/stdout through pipes and files.
+5. **Execute commands** — use `execve()` to run the specified commands.
+6. **Wait for completion** — parent waits for all child processes using `wait()`.
 
-## 💡 How It Works
+## Author
 
-1. **Parse arguments**: Extract input file, commands, and output file from command line
-2. **Create pipes**: Set up inter-process communication channels
-3. **Fork processes**: Create child processes for each command
-4. **Redirect I/O**: Use `dup2()` to redirect stdin/stdout through pipes and files
-5. **Execute commands**: Use `execve()` to run the specified commands
-6. **Wait for completion**: Parent waits for all child processes to finish
-
-## 📚 Key Concepts
-
-- **Fork**: Creating child processes
-- **Pipe**: Inter-process communication
-- **Dup2**: File descriptor duplication and redirection
-- **Execve**: Program execution
-- **Wait**: Process synchronization
-
-## ⚙️ Requirements
-
-- GCC compiler
-- Make
-- Unix-like operating system (Linux/macOS)
-
-## 👤 Author
-
-**njaradat** - 42 Student
-
-## 📄 License
-
-This project is part of the 42 school curriculum.
+**njaradat** — [42 School](https://42.fr/)
